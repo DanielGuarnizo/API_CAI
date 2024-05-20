@@ -4,6 +4,10 @@ from app import crud
 from app.core.config import settings
 from app.models import User, UserCreate
 
+# handcraft url
+# URL_DATABASE = "postgresql://1605@localhost:5432/app"
+# engine = create_engine(URL_DATABASE)
+
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
