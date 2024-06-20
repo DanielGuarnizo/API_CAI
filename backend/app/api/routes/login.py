@@ -10,8 +10,16 @@ from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models import Message, NewPassword, Token, UserPublic
+from app.models import (
+    Message,
+    NewPassword,
+    TemplateWorkout,
+    Token,
+    UserCreate,
+    UserPublic,
+)
 from app.utils import (
+    generate_new_account_email,
     generate_password_reset_token,
     generate_reset_password_email,
     send_email,
@@ -21,7 +29,49 @@ from app.utils import (
 router = APIRouter()
 
 
-@router.post("/login/access-token")
+############### new
+@router.post("/login/register")
+def register_user(*, session: SessionDep, user_in: UserCreate) -> Any:
+    """
+    Create new user and return token.
+    """
+    user = crud.get_user_by_email(session=session, email=user_in.email)
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this email already exists in the system.",
+        )
+
+    user = crud.create_user(session=session, user_create=user_in)
+    if settings.emails_enabled and user_in.email:
+        email_data = generate_new_account_email(
+            email_to=user_in.email, username=user_in.email, password=user_in.password
+        )
+        send_email(
+            email_to=user_in.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
+    # Create TemplateWorkout Base to eventually assign to it the new customn exercises of this user
+    db_base = TemplateWorkout(user_id=user.id, workout_name="Base")
+    _ = crud.create_template_workout(session=session, db_template_workout=db_base)
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    # Return the user data along with the access token
+    return {
+        "user_id": user.id,
+        "access_token": Token(
+            access_token=security.create_access_token(
+                user.id, expires_delta=access_token_expires
+            ),
+            user_id=user.id,
+        ),
+    }
+
+
+##########################################################################################
+@router.post("/login/access-token", response_model=Token)
 def login_access_token(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Token:
@@ -39,7 +89,8 @@ def login_access_token(
     return Token(
         access_token=security.create_access_token(
             user.id, expires_delta=access_token_expires
-        )
+        ),
+        user_id=user.id,
     )
 
 

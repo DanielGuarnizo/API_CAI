@@ -3,7 +3,16 @@ from typing import Any
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
-from app.models import Item, ItemCreate, User, UserCreate, UserUpdate
+from app.models import (
+    Exercise,
+    Set,
+    TemplateExercise,
+    TemplateWorkout,
+    User,
+    UserCreate,
+    UserUpdate,
+    Workout,
+)
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -45,9 +54,58 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def create_item(*, session: Session, item_in: ItemCreate, owner_id: int) -> Item:
-    db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
-    session.add(db_item)
+# def create_item(*, session: Session, item_in: ItemCreate, owner_id: int) -> Item:
+#     db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
+#     session.add(db_item)
+#     session.commit()
+#     session.refresh(db_item)
+#     return db_item
+
+######## NEW CODE ##########################################
+
+
+def create_template_workout(
+    *, session: Session, db_template_workout: TemplateWorkout
+) -> TemplateWorkout:
+    session.add(db_template_workout)
     session.commit()
-    session.refresh(db_item)
-    return db_item
+    session.refresh(db_template_workout)
+    return db_template_workout
+
+
+def create_template_exercise(
+    *, session: Session, db_exercise: TemplateExercise
+) -> TemplateExercise:
+    session.add(db_exercise)
+    session.commit()
+    session.refresh(db_exercise)
+    return db_exercise
+
+
+def get_base_template_workout_id_by_user_id(*, session: Session, user_id: str) -> str:
+    statement = select(TemplateWorkout.template_workout_id).where(
+        TemplateWorkout.user_id == user_id
+    )
+    result = session.exec(statement).first()
+    return result
+
+
+def create_workout(*, session: Session, db_workout: Workout) -> Workout:
+    session.add(db_workout)
+    session.commit()
+    session.refresh(db_workout)
+    return db_workout
+
+
+def create_exercise(*, session: Session, db_exercise: Exercise) -> Exercise:
+    session.add(db_exercise)
+    session.commit()
+    session.refresh(db_exercise)
+    return db_exercise
+
+
+def create_set(*, session: Session, db_set: Set) -> Set:
+    session.add(db_set)
+    session.commit()
+    session.refresh(db_set)
+    return db_set

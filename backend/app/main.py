@@ -6,6 +6,20 @@ from starlette.middleware.cors import CORSMiddleware
 from app.api.main import api_router
 from app.core.config import settings
 
+## Log to do debug, this is not part of the application
+# Configure logging
+# import logging
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+#     handlers=[
+#         logging.StreamHandler(),
+#         logging.FileHandler("/app/logs/app.log")  # Save logs to a file in the container
+#     ]
+# )
+
+# logger = logging.getLogger(__name__)
+
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
@@ -33,3 +47,5 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# uvicorn main:app --reload , to run the application without the docker
